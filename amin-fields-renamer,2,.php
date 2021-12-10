@@ -149,15 +149,15 @@ function renamer_settings_custom_text_callback() {
 
 }
 
-// Renaming the post columns code
-error_log( "here" );
-
+// code to rename the post columns
 function rename_columns ( $columns ){
-  $options = get_option( 'renamer_settings' );
-  $columns ['author'] = esc_html( $options['custom-text'] );
-  return $columns;
+$options = get_option( 'renamer_settings' );
+$columns ['author'] = esc_html( $options['custom_text'] );
+return $columns;
 }
+
 add_filter ('manage_posts_columns', 'rename_columns', 30 );
+
 
 
 //Unset post admin $columns
