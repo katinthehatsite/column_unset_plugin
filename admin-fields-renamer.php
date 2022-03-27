@@ -7,8 +7,12 @@ Description: This plugin renames fields in the admin area for posts
 Author: Kateryna Kodonenko
 Author URI: http://kateryna.blog
 Text Domain: adminrenamer
-Version: 1.0
+Version: 2.0
 */
+
+// ===================================================================================================
+// SECTION 1
+// Add menu settings page for the plugin
 
 
 //Add menu page for the plugin
@@ -27,7 +31,9 @@ function renamer_settings_page() {
 
 add_action( 'admin_menu', 'renamer_settings_page');
 
-//Callback for the menu page
+// ===================================================================================================
+// SECTION 2
+// Callback for the menu section page;
 
 function adminrenamer_settings_page_callback(){
   //Double check user capabilities
@@ -52,7 +58,10 @@ function adminrenamer_settings_page_callback(){
 <?php
 }
 
-//Add settings page section
+// ===================================================================================================
+// SECTION 3
+// Add settings page section
+
 
 //Check if the plugin settings exist and if don't, then create them
 function renamer_settings() {
@@ -72,11 +81,11 @@ function renamer_settings() {
  );
 
 
-//Checkbox field
+//Checkbox field for Column Remover Checkbox
 
  add_settings_field(
    'renamer_settings_checkbox',
-   __( 'Checkbox', 'adminrenamer'),
+   __( 'Column Remover', 'adminrenamer'),
    'renamer_settings_checkbox_callback',
    'adminrenamer',
    'renamer_settings_section',
@@ -85,6 +94,21 @@ function renamer_settings() {
    ]
 
  );
+
+
+ // Checkbox field for Subscriptions activating checkbox
+
+ add_settings_field(
+  'renamer_settings_checkbox2',
+  __( 'Subscriptions Indicator', 'adminrenamer'),
+  'renamer_settings_checkbox_callback2',
+  'adminrenamer',
+  'renamer_settings_section',
+  [
+    'label' => 'Show subscriptions'
+  ]
+
+);
 
 
 add_settings_field(
@@ -108,6 +132,10 @@ add_settings_field(
 
 add_action( 'admin_init', 'renamer_settings' );
 
+// ===================================================================================================
+// SECTION 4
+// Callbacks for the settings section;
+
 //callback for the settings sections
 
 function renamer_settings_section_callback() {
@@ -116,25 +144,44 @@ function renamer_settings_section_callback() {
 
 }
 
-//callback for the checkbox field
+//callback for the checkbox field for Column Remover
 
 function renamer_settings_checkbox_callback( $args ) {
   $options = get_option( 'renamer_settings' );
-  $checkbox = '';
-  if( isset( $options[ 'checkbox' ] ) ) {
-    $checkbox = esc_html( $options['checkbox'] );
+  error_log(print_r($options, true));
+  $checkbox1 = '';
+  if( isset( $options[ 'checkbox1' ] ) ) {
+    $checkbox1 = esc_html( $options['checkbox1'] );
 }
 
-  $html = '<input type="checkbox" id="renamer_settings_checkbox" name="renamer_settings[checkbox]" value="1"' . checked( 1, $checkbox, false ) . '/>';
+  $html = '<input type="checkbox" id="renamer_settings_checkbox" name="renamer_settings[checkbox1]" value="1"' . checked( 1, $checkbox1, false ) . '/>';
 	$html .= '&nbsp;';
-	$html .= '<label for="renamer_settings_checkbox">' . $args['label'] . '</label>';
+	$html .= '<label for="renamer_settings[checkbox1]">' . $args['label'] . '</label>';
 
 	echo $html;
 }
 
-//callback for the custom text
 
-//custom text field in the settings sections callback
+//callback for the checkbox field for Subscriptions Activation
+
+function renamer_settings_checkbox_callback2( $args ) {
+  $options = get_option( 'renamer_settings' );
+  $checkbox2 = '';
+  if( isset( $options[ 'checkbox2' ] ) ) {
+    $checkbox2 = esc_html( $options['checkbox2'] );
+}
+
+  $html = '<input type="checkbox" id="renamer_settings_checkbox2" name="renamer_settings[checkbox2]" value="1"' . checked( 1, $checkbox2, false ) . '/>';
+	$html .= '&nbsp;';
+	$html .= '<label for="renamer_settings[checkbox2]">' . $args['label'] . '</label>';
+
+	echo $html;
+}
+
+
+
+//callback for the Column Renamer custom text field
+
 
 function renamer_settings_custom_text_callback() {
 
@@ -149,18 +196,21 @@ function renamer_settings_custom_text_callback() {
 
 }
 
-// code to rename the post columns
+// ===================================================================================================
+// SECTION 5
+// Settings section performing custom actions
+
+// rename the author column in post admin field - tied to custom text field
 function rename_columns ( $columns ){
 $options = get_option( 'renamer_settings' );
 $columns ['author'] = esc_html( $options['custom_text'] );
 return $columns;
 }
 
-add_filter ('manage_posts_columns', 'rename_columns', 30 );
+add_filter ('manage_post_posts_columns', 'rename_columns', 30 );
 
 
-
-//Unset post admin $columns
+// unset the date column on the posts admin field tied to the checkbox field for Column Remover
 
 function my_manage_columns( $columns ) {
  unset($columns['date']);
@@ -169,12 +219,52 @@ function my_manage_columns( $columns ) {
 
 function my_column_init() {
   $options = get_option( 'renamer_settings' );
-    if( isset( $options[ 'checkbox' ]) && $options['checkbox'] == '1' ) {
-      add_filter( 'manage_posts_columns' , 'my_manage_columns' );
+    if( isset( $options[ 'checkbox1' ]) && $options['checkbox1'] == '1' ) {
+      add_filter( 'manage_post_posts_columns' , 'my_manage_columns' );
     }
 }
 
 add_action( 'admin_init' , 'my_column_init' );
+
+
+
+// Subscriptions Activation section
+
+
+//adding a new column tied to WooCommerce Subscriptions
+ function add_product_column( $columns ) {
+    //add column
+    $columns['new_column'] = __( 'Simple Sub', 'woocommerce' );
+
+    return $columns;
+}
+add_filter( 'manage_edit-product_columns', 'add_product_column', 10, 1 );
+
+
+// function to populate the products column
+
+add_action( 'manage_product_posts_custom_column', 'subs_populate_admin', 10, 2 );
+
+// Subscription activation checkbox that will enable the subscription indicator column
+// Tied to checkbox Subscriptions activation
+
+$options = get_option( 'renamer_settings' );
+if( isset( $options[ 'checkbox2' ]) && $options['checkbox1'] == '1' ) {
+function subs_populate_admin( $column_name ) {
+
+  if ( $column_name == 'new_column' ) {
+    $product = wc_get_product ();
+
+        if ( WC_Subscriptions_Product::is_subscription( $product) ) {
+        echo 'yes';
+    }
+
+  }
+}
+}
+
+
+
 
 
 ?>
